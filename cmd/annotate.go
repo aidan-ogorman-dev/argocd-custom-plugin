@@ -3,19 +3,26 @@ package cmd
 import (
 	"strings"
 
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-const StdIn = "-"
+const (
+	StdIn                  = "-"
+	namespaceKind          = "Namespace"
+	apiVersionV1           = "v1"
+	pluginSourceAnnotation = "argocd-plugin-source"
+)
 
-func NewAnnotateCommand() {
+func NewAnnotateCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "annotate <path>",
 		Short: "Check for and annotate namespaces",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
-				return fmt.Error("<path> argument required to annotate manifests")
+				return fmt.Errorf("<path> must be provided")
 			}
 			return nil
 		},
@@ -25,7 +32,7 @@ func NewAnnotateCommand() {
 
 			path := args[0]
 			if path == StdIn {
-				manifests, err = readManifestsData(cmd.InOrStdin())
+				manifests, err = readManifestData(cmd.InOrStdin())
 				if err != nil {
 					return err
 				}
@@ -49,7 +56,24 @@ func NewAnnotateCommand() {
 				}
 			}
 
+			for _, manifest := range manifests {
+				apiVersion := manifest.GetAPIVersion()
+				kind := manifest.GetKind()
+				if kind == namespaceKind && apiVersion == apiVersionV1 {
+					annotations := manifest.GetAnnotations()
+					if annotations == nil {
+						annotations = make(map[string]string)
+					}
+					annotations[pluginSourceAnnotation] = "true"
+					manifest.SetAnnotations(annotations)
+				}
+
+				fmt.Fprintf(cmd.OutOrStdout(), "%s---\n", manifest)
+			}
+
 			return nil
 		},
 	}
+
+	return command
 }
