@@ -11,7 +11,7 @@ import (
 
 const (
 	StdIn                  = "-"
-	namespaceKind          = "Namespace"
+	kindNamespace          = "Namespace"
 	apiVersionV1           = "v1"
 	pluginSourceAnnotation = "argocd-plugin-source"
 )
@@ -59,7 +59,7 @@ func NewAnnotateCommand() *cobra.Command {
 			for _, manifest := range manifests {
 				apiVersion := manifest.GetAPIVersion()
 				kind := manifest.GetKind()
-				if kind == namespaceKind && apiVersion == apiVersionV1 {
+				if kind == kindNamespace && apiVersion == apiVersionV1 {
 					annotations := manifest.GetAnnotations()
 					if annotations == nil {
 						annotations = make(map[string]string)
